@@ -14,6 +14,7 @@ namespace SensorIngestApi.Services
         private readonly IAlertBus _alerts;
         private readonly IHubContext<TelemetryHub> _hub;
         private readonly int _parallel;
+        private readonly ILogger<ChannelConsumer> _logger;
 
         public ChannelConsumer(
             Channel<SensorReading> channel,
@@ -21,7 +22,8 @@ namespace SensorIngestApi.Services
             IAggregator aggr,
             IAlertBus alerts,
             IHubContext<TelemetryHub> hub,
-            int parallelConsumers = 4)
+            int parallelConsumers = 4,
+            ILogger<ChannelConsumer> logger = null)
         {
             _channel = channel;
             _stats = stats;
@@ -29,6 +31,7 @@ namespace SensorIngestApi.Services
             _alerts = alerts;
             _hub = hub;
             _parallel = Math.Max(1, parallelConsumers);
+            _logger = logger;
         }
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -91,6 +94,8 @@ namespace SensorIngestApi.Services
                         total = _stats.TotalProcessed
                     }, cancellationToken: stoppingToken);
 
+                    _logger.LogWarning("Backpressure rising: queue length {QueueLength}", perSec);
+
                     await Task.Delay(1000, stoppingToken);
                 }
             }, stoppingToken);
@@ -102,6 +107,8 @@ namespace SensorIngestApi.Services
         {
             _alerts.Publish(a);
             _hub.Clients.All.SendAsync("alert", a);
+            _logger.LogWarning("Anomaly {Kind} for {DeviceId} value {Value} at {Utc}",
+                a.Kind, a.DeviceId, a.Value, a.Utc);
         }
     }
 }
