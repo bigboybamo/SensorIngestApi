@@ -10,11 +10,13 @@ namespace SensorIngestApi.Controllers
     {
         private readonly IThroughputStats _stats;
         private readonly IAggregator _aggr;
+        private readonly ILogger<StatsController> _logger;
 
-        public StatsController(IThroughputStats stats, IAggregator aggr)
+        public StatsController(IThroughputStats stats, IAggregator aggr, ILogger<StatsController> logger)
         {
             _stats = stats;
             _aggr = aggr;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -28,6 +30,11 @@ namespace SensorIngestApi.Controllers
                 Global = _aggr.GetGlobal(),
                 TopDevices = _aggr.GetTopDevices(10)
             };
+
+            _logger.LogInformation(
+                "Stats snapshot TotalProcessed={TotalProcessed} PerSecond={PerSecond} Queue={Queue} TopDevices={TopCount}",
+                dto.TotalProcessed, dto.PerSecond, dto.QueueLength, dto.TopDevices.Count);
+
             return Ok(dto);
         }
     }

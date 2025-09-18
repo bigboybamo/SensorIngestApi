@@ -5,9 +5,17 @@ using SensorIngestApi.Hubs;
 using SensorIngestApi.Interfaces;
 using SensorIngestApi.Models;
 using SensorIngestApi.Services;
+using Serilog;
 using System.Threading.Channels;
 
 var builder = WebApplication.CreateBuilder(args);
+
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 
 // ---------- Tunables ----------
@@ -72,6 +80,17 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.MapHub<TelemetryHub>("/hub");
-app.MapGet("/health", () => Results.Ok("OK"));
+
+app.MapGet("/health", (ILoggerFactory lf, IThroughputStats stats) =>
+{
+    var logger = lf.CreateLogger("Health");
+    var perSec = stats.GetPerSecond();
+
+    logger.LogInformation(
+        "Health ping OK: TotalProcessed={TotalProcessed} PerSecond={PerSecond} Queue={Queue}",
+        stats.TotalProcessed, perSec, stats.EstimatedQueueLength);
+
+    return Results.Ok("OK");
+});
 
 app.Run();
