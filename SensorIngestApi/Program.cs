@@ -55,7 +55,7 @@ builder.Services.AddHostedService(sp =>
     new SensorSimulator(
         channel: sp.GetRequiredService<Channel<SensorReading>>(),
         ratePerSecond: TargetRatePerSecond,
-        enabled: true)); // set false when using external load
+        enabled: true));
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -63,6 +63,15 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<TelemetryDbContext>(opt =>
     opt.UseNpgsql(builder.Configuration.GetConnectionString("TelemetryDb")));
+
+builder.Services.AddCors(o =>
+{
+    o.AddDefaultPolicy(p => p
+    .WithOrigins("http://localhost:5173", "https://localhost:5173")
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials());
+});
 
 var app = builder.Build();
 
@@ -75,10 +84,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthorization();
 
 app.MapControllers();
-
+app.UseCors();
 app.MapHub<TelemetryHub>("/hub");
 
 app.MapGet("/health", (ILoggerFactory lf, IThroughputStats stats) =>
