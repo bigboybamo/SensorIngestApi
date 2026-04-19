@@ -9,6 +9,7 @@ namespace SensorIngestApi.Data
 
         public DbSet<SensorReading> SensorReadings => Set<SensorReading>();
         public DbSet<Alert> Alerts => Set<Alert>();
+        public DbSet<Device> Devices => Set<Device>();
 
         protected override void OnModelCreating(ModelBuilder b)
         {
@@ -29,6 +30,14 @@ namespace SensorIngestApi.Data
                 e.HasKey(x => x.Id);
                 e.Property(x => x.DeviceId).HasMaxLength(128);
                 e.HasIndex(x => new { x.DeviceId, x.Utc });
+            });
+
+            b.Entity<Device>(e =>
+            {
+                e.ToTable("devices");
+                e.HasKey(x => x.DeviceId);
+                e.Property(x => x.DeviceId).HasColumnName("device_id").HasMaxLength(128);
+                e.Property(x => x.RegisteredAtUtc).HasColumnName("registered_at").HasColumnType("timestamptz");
             });
         }
     }

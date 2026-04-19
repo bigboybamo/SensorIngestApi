@@ -360,4 +360,10 @@ MigrationBackup/
 .ionide/
 
 # Fody - auto-generated XML schema
-FodyWeavers.xsd
+FodyWeavers.xsd# Claude setup - never commit secrets or state
+.env
+.claude/setup.log
+.claude/validate.log
+.claude/.setup-state
+.claude/project.env
+.claude/enabled-integrations
